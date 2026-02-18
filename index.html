@@ -1598,7 +1598,7 @@
 
                     <div class="step-nav">
                         <div></div>
-                        <button class="pr-btn-check step-nav-right" id="s1-next" disabled>
+                        <button class="pr-btn-check step-nav-right" id="s1-next">
                             Weiter
                             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                         </button>
@@ -1784,7 +1784,7 @@
                             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 16l-4-4m0 0l4-4m-4 4h18"/></svg>
                             Zurück
                         </button>
-                        <button class="pr-btn-check step-nav-right" id="s2-next" disabled>
+                        <button class="pr-btn-check step-nav-right" id="s2-next">
                             Weiter
                             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                         </button>
@@ -1845,7 +1845,7 @@
                             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 16l-4-4m0 0l4-4m-4 4h18"/></svg>
                             Zurück
                         </button>
-                        <button class="pr-btn-check step-nav-right" id="s3-send" disabled>
+                        <button class="pr-btn-check step-nav-right" id="s3-send">
                             Anfrage senden
                             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                         </button>
@@ -2057,11 +2057,6 @@
 
             function goToStep(step) {
                 if (step < 1 || step > 4) return;
-                // Validate before forward
-                if (step > currentStep) {
-                    if (currentStep === 1 && !validateStep1()) return;
-                    if (currentStep === 2 && !validateStep2()) return;
-                }
                 currentStep = step;
                 // Update panels
                 document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
@@ -2089,7 +2084,7 @@
             stepItems.forEach(si => {
                 si.addEventListener('click', () => {
                     const target = parseInt(si.dataset.step);
-                    if (target < currentStep) goToStep(target);
+                    goToStep(target);
                 });
             });
 
@@ -2154,7 +2149,7 @@
                     ezInput.value !== '';
             }
             function validateStep1UI() {
-                s1Next.disabled = !validateStep1();
+                // No longer disabling - free navigation
             }
 
             s1Next.addEventListener('click', () => goToStep(2));
@@ -2222,7 +2217,7 @@
                 return all.length > 0 || sonstiges.length > 0;
             }
             function validateStep2UI() {
-                document.getElementById('s2-next').disabled = !validateStep2();
+                // No longer disabling - free navigation
             }
 
             document.getElementById('s2-back').addEventListener('click', () => goToStep(1));
@@ -2235,7 +2230,7 @@
             const s3Send = document.getElementById('s3-send');
 
             function validateStep3UI() {
-                s3Send.disabled = !(s3Name.value.trim() && s3Email.value.trim() && s3Phone.value.trim());
+                // No longer disabling - validation on final submit
             }
             [s3Name, s3Email, s3Phone].forEach(el => el.addEventListener('input', validateStep3UI));
 
@@ -2281,6 +2276,15 @@
 
             document.getElementById('s3-back').addEventListener('click', () => goToStep(2));
             s3Send.addEventListener('click', function() {
+                // Validate all steps before sending
+                const errors = [];
+                if (!validateStep1()) errors.push('Fahrzeugdaten unvollständig (FIN, HSN, TSN, km, Erstzulassung)');
+                if (!validateStep2()) errors.push('Bitte mindestens einen Service auswählen');
+                if (!(s3Name.value.trim() && s3Email.value.trim() && s3Phone.value.trim())) errors.push('Bitte Name, E-Mail und Telefon ausfüllen');
+                if (errors.length > 0) {
+                    alert('Bitte prüfen Sie folgende Felder:\n\n• ' + errors.join('\n• '));
+                    return;
+                }
                 const allServices = getAllSelectedServices();
                 const bremsenDetails = Array.from(document.querySelectorAll('input[name="bremsen-detail"]:checked')).map(c => c.value);
                 console.log('Service-Anfrage:', {
