@@ -1949,11 +1949,11 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="name">Name *</label>
-                                <input type="text" id="name" name="name" placeholder="Ihr Name" required>
+                                <input type="text" id="name" name="name" placeholder="Ihr Name">
                             </div>
                             <div class="form-group">
                                 <label for="phone">Telefon *</label>
-                                <input type="tel" id="phone" name="phone" placeholder="Ihre Telefonnummer" required>
+                                <input type="tel" id="phone" name="phone" placeholder="Ihre Telefonnummer">
                             </div>
                         </div>
                         <div class="form-group">
@@ -2360,9 +2360,7 @@
             function validateStep1() {
                 return validateVIN(vinInput.value) &&
                     hsnInput.value.length === 4 &&
-                    tsnInput.value.length === 3 &&
-                    kmInput.value.trim() !== '' &&
-                    ezInput.value !== '';
+                    tsnInput.value.length === 3;
             }
 
             s1Next.addEventListener('click', () => goToStep(2));
@@ -2478,7 +2476,7 @@
             document.getElementById('s3-back').addEventListener('click', () => goToStep(2));
             s3Send.addEventListener('click', async function() {
                 const errors = [];
-                if (!validateStep1()) errors.push('Fahrzeugdaten unvollstaendig (FIN 17 Zeichen, HSN 4-stellig, TSN 3-stellig, Kilometerstand, Erstzulassung)');
+                if (!validateStep1()) errors.push('Fahrzeugdaten unvollstaendig (FIN 17 Zeichen, HSN 4-stellig, TSN 3-stellig)');
                 if (!validateStep2()) errors.push('Bitte mindestens einen Service auswaehlen');
                 if (!(s3Name.value.trim() && s3Email.value.trim() && s3Phone.value.trim())) errors.push('Bitte Name, E-Mail und Telefon ausfuellen');
                 if (errors.length > 0) {
