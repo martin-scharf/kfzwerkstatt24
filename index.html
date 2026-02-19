@@ -2488,7 +2488,7 @@
                 const bremsenDetails = Array.from(document.querySelectorAll('input[name="bremsen-detail"]:checked')).map(c => c.value);
                 const payload = {
                     type: 'service-anfrage',
-                    workshopEmail: KFZ_CONFIG.workshopEmail,
+                    workshopEmail: KFZ_CONFIG.workshopEmail, workshopAddress: KFZ_CONFIG.workshopAddress || "", workshopPhone: KFZ_CONFIG.workshopPhone || "",
                     workshopName: KFZ_CONFIG.workshopName,
                     vehicle: selectedVehicle ? (selectedVehicle.marke + ' ' + selectedVehicle.modell) : 'Unbekannt',
                     vin: vinInput.value, hsn: hsnInput.value, tsn: tsnInput.value,
