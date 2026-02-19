@@ -33,13 +33,22 @@ cat > "$SLUG/index.html" << 'EOF'
 </head><body><p>Seite nicht gefunden.</p></body></html>
 EOF
 
-# Template kopieren
+# Template kopieren (keine Images mehr kopieren - werden zentral referenziert)
 cp index.html "$SLUG/$CODE/index.html"
-cp -r images "$SLUG/$CODE/images" 2>/dev/null
 
 # Firmennamen im Template ersetzen
-sed -i '' "s/Mustermann Fahrzeugtechnik/$FIRMA/g" "$SLUG/$CODE/index.html"
-sed -i '' "s/Mustermann/$FIRMA/g" "$SLUG/$CODE/index.html"
+sed -i '' "s/KFZ-Werkstatt Mustermann/KFZ-Werkstatt $FIRMA/g" "$SLUG/$CODE/index.html"
+sed -i '' "s/KFZ Mustermann/KFZ $FIRMA/g" "$SLUG/$CODE/index.html"
+sed -i '' "s/Max Mustermann/Max $FIRMA/g" "$SLUG/$CODE/index.html"
+
+# Bild-Pfade anpassen (2 Ebenen tief)
+sed -i '' 's|src="images/|src="../../images/|g' "$SLUG/$CODE/index.html"
+
+# Workshop-Email Platzhalter (muss manuell angepasst werden)
+echo ""
+echo "WICHTIG: Workshop-Email in $SLUG/$CODE/index.html anpassen!"
+echo "  Suche nach: workshopEmail: 'service@kfz-mustermann.de'"
+echo "  Ersetze mit der echten Werkstatt-Email."
 
 echo ""
 echo "Fertig!"

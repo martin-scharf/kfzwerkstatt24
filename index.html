@@ -1190,6 +1190,22 @@
             .ws-detail-grid { grid-template-columns: 1fr; }
             .es-grid { grid-template-columns: 1fr; }
         }
+
+        /* HSN/TSN Dropdown */
+        .hsn-dropdown { position: absolute; top: 100%; left: 0; right: 0; max-height: 240px; overflow-y: auto; background: var(--color-dark-mid); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius); z-index: 100; display: none; }
+        .hsn-dropdown.open { display: block; }
+        .hsn-dropdown-item { padding: 10px 16px; cursor: pointer; font-size: 0.9rem; color: rgba(255,255,255,0.8); border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s; }
+        .hsn-dropdown-item:hover, .hsn-dropdown-item.highlighted { background: rgba(220,38,38,0.2); color: white; }
+        .hsn-dropdown-item strong { color: var(--color-accent); }
+        .hsn-dropdown-empty { padding: 12px 16px; font-size: 0.85rem; color: rgba(255,255,255,0.4); font-style: italic; }
+
+        /* Vehicle Info Box */
+        .vehicle-info-box { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.3); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 20px; }
+        .vehicle-info-box h4 { font-family: var(--font-display); font-size: 1.1rem; color: #22c55e; margin-bottom: 12px; }
+        .vehicle-info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+        .vehicle-info-item { display: flex; flex-direction: column; gap: 2px; }
+        .vehicle-info-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.45); }
+        .vehicle-info-value { font-size: 0.95rem; font-weight: 600; color: white; }
     </style>
 </head>
 <body>
@@ -1559,22 +1575,37 @@
                         Fahrzeug identifizieren
                     </h3>
                     <div class="pr-form-row">
+                        <div class="pr-form-group" style="position:relative;">
+                            <label>HSN (4-stellig) *</label>
+                            <input type="text" id="s1-hsn" placeholder="z.B. 0603" maxlength="4" autocomplete="off">
+                            <span class="pr-hint">Herstellerschlüssel aus Feld 2.1</span>
+                            <div class="hsn-dropdown" id="hsn-dropdown"></div>
+                        </div>
+                        <div class="pr-form-group" style="position:relative;">
+                            <label>TSN (3-stellig) *</label>
+                            <input type="text" id="s1-tsn" placeholder="z.B. BHN" maxlength="3" autocomplete="off" disabled>
+                            <span class="pr-hint">Typschlüssel aus Feld 2.2</span>
+                            <div class="hsn-dropdown" id="tsn-dropdown"></div>
+                        </div>
                         <div class="pr-form-group">
-                            <label>FIN / VIN *</label>
-                            <input type="text" id="s1-vin" placeholder="z.B. WVWZZZ3CZWE123456" maxlength="17">
+                            <label>FIN / VIN (17 Zeichen) *</label>
+                            <input type="text" id="s1-vin" placeholder="z.B. WVWZZZ3CZWE123456" maxlength="17" autocomplete="off">
                             <span class="pr-msg" id="s1-vin-msg"></span>
                         </div>
-                        <div class="pr-form-group">
-                            <label>HSN (4-stellig) *</label>
-                            <input type="text" id="s1-hsn" placeholder="z.B. 0603" maxlength="4">
-                            <span class="pr-hint">Herstellerschlüssel aus dem Fahrzeugschein</span>
-                        </div>
-                        <div class="pr-form-group">
-                            <label>TSN (3-stellig) *</label>
-                            <input type="text" id="s1-tsn" placeholder="z.B. BHN" maxlength="3">
-                            <span class="pr-hint">Typschlüssel aus dem Fahrzeugschein</span>
+                    </div>
+
+                    <!-- Fahrzeug-Info Box (erscheint nach HSN+TSN Auswahl) -->
+                    <div class="vehicle-info-box" id="vehicle-info" style="display:none;">
+                        <h4>Erkanntes Fahrzeug</h4>
+                        <div class="vehicle-info-grid">
+                            <div class="vehicle-info-item"><span class="vehicle-info-label">Marke</span><span class="vehicle-info-value" id="vi-marke">-</span></div>
+                            <div class="vehicle-info-item"><span class="vehicle-info-label">Modell</span><span class="vehicle-info-value" id="vi-modell">-</span></div>
+                            <div class="vehicle-info-item"><span class="vehicle-info-label">Leistung</span><span class="vehicle-info-value" id="vi-leistung">-</span></div>
+                            <div class="vehicle-info-item"><span class="vehicle-info-label">Hubraum</span><span class="vehicle-info-value" id="vi-hubraum">-</span></div>
+                            <div class="vehicle-info-item"><span class="vehicle-info-label">Kraftstoff</span><span class="vehicle-info-value" id="vi-kraftstoff">-</span></div>
                         </div>
                     </div>
+
                     <div class="pr-form-row-2">
                         <div class="pr-form-group">
                             <label>Kilometerstand *</label>
@@ -2019,6 +2050,15 @@
         </div>
     </footer>
 
+    <!-- Konfiguration: Email-Empfänger pro Seite (wird beim Klonen angepasst) -->
+    <script>
+        var KFZ_CONFIG = {
+            workshopName: 'KFZ-Werkstatt Mustermann',
+            workshopEmail: 'service@kfz-mustermann.de',
+            hsnTsnUrl: 'https://kfzwerkstatt24.com/data/hsn-tsn.json',
+            apiUrl: 'https://kfz-api-rho.vercel.app/api/contact'
+        };
+    </script>
     <script>
         // Mobile Navigation
         const mobileToggle = document.querySelector('.mobile-toggle');
@@ -2037,15 +2077,60 @@
         revealOnScroll();
 
         // Contact form (Schnellanfrage)
-        document.querySelector('.contact-form').addEventListener('submit', (e) => {
+        document.querySelector('.contact-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            alert('Vielen Dank für Ihre Anfrage! Wir melden uns schnellstmöglich bei Ihnen.');
-            e.target.reset();
+            const fd = new FormData(e.target);
+            const data = Object.fromEntries(fd);
+            data.workshopEmail = KFZ_CONFIG.workshopEmail;
+            data.workshopName = KFZ_CONFIG.workshopName;
+            data.type = 'schnellanfrage';
+            try {
+                const res = await fetch(KFZ_CONFIG.apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                if (res.ok) {
+                    alert('Vielen Dank für Ihre Anfrage! Wir melden uns schnellstmöglich bei Ihnen.');
+                    e.target.reset();
+                } else { throw new Error('Server error'); }
+            } catch(err) {
+                // Fallback: mailto
+                const subject = encodeURIComponent('Schnellanfrage von ' + (data.name || 'Kunde'));
+                const body = encodeURIComponent('Name: ' + data.name + '\nTelefon: ' + data.phone + '\nE-Mail: ' + (data.email||'-') + '\nLeistung: ' + (data.service||'-') + '\nNachricht: ' + (data.message||'-'));
+                window.location.href = 'mailto:' + KFZ_CONFIG.workshopEmail + '?subject=' + subject + '&body=' + body;
+            }
         });
+
+        // ===== HSN/TSN Database =====
+        let hsnTsnDb = null;
+        let hsnDbLoading = false;
+
+        async function loadHsnTsnDb() {
+            if (hsnTsnDb) return hsnTsnDb;
+            if (hsnDbLoading) {
+                // wait for it
+                return new Promise(resolve => {
+                    const iv = setInterval(() => { if (hsnTsnDb) { clearInterval(iv); resolve(hsnTsnDb); } }, 100);
+                });
+            }
+            hsnDbLoading = true;
+            try {
+                const res = await fetch(KFZ_CONFIG.hsnTsnUrl);
+                hsnTsnDb = await res.json();
+            } catch(e) {
+                console.warn('HSN/TSN DB konnte nicht geladen werden:', e);
+                hsnTsnDb = {};
+            }
+            return hsnTsnDb;
+        }
+
+        // Preload when user scrolls near the form
+        const preloadObserver = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) { loadHsnTsnDb(); preloadObserver.disconnect(); }
+        }, { rootMargin: '500px' });
+        preloadObserver.observe(document.getElementById('service-teile'));
 
         // ===== 3-Step Service Flow =====
         (function() {
             let currentStep = 1;
+            let selectedVehicle = null;
             const stepItems = document.querySelectorAll('.step-item');
             const connectors = [document.getElementById('conn-1-2'), document.getElementById('conn-2-3')];
 
@@ -2058,11 +2143,9 @@
             function goToStep(step) {
                 if (step < 1 || step > 4) return;
                 currentStep = step;
-                // Update panels
                 document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
                 const targetPanel = step === 4 ? 'step-confirm' : 'step-' + step;
                 document.getElementById(targetPanel).classList.add('active');
-                // Update indicator
                 stepItems.forEach((si, i) => {
                     const s = i + 1;
                     si.classList.remove('active', 'completed');
@@ -2074,21 +2157,15 @@
                     if (i + 1 < step) c.classList.add('completed');
                     else if (i + 1 === step - 1) c.classList.add('active');
                 });
-                // Build summary on step 3
                 if (step === 3) buildFinalSummary();
-                // Scroll to section
                 document.getElementById('service-teile').scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
 
-            // Step indicator click navigation
             stepItems.forEach(si => {
-                si.addEventListener('click', () => {
-                    const target = parseInt(si.dataset.step);
-                    goToStep(target);
-                });
+                si.addEventListener('click', () => goToStep(parseInt(si.dataset.step)));
             });
 
-            // ===== STEP 1: Vehicle =====
+            // ===== STEP 1: Vehicle with HSN/TSN Autocomplete =====
             const vinInput = document.getElementById('s1-vin');
             const vinMsg = document.getElementById('s1-vin-msg');
             const hsnInput = document.getElementById('s1-hsn');
@@ -2098,7 +2175,155 @@
             const photoInput = document.getElementById('s1-photo');
             const photoName = document.getElementById('s1-photo-name');
             const s1Next = document.getElementById('s1-next');
+            const hsnDropdown = document.getElementById('hsn-dropdown');
+            const tsnDropdown = document.getElementById('tsn-dropdown');
+            const vehicleInfo = document.getElementById('vehicle-info');
 
+            // HSN input with dropdown
+            hsnInput.addEventListener('input', async function() {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);
+                tsnInput.value = '';
+                tsnInput.disabled = true;
+                selectedVehicle = null;
+                vehicleInfo.style.display = 'none';
+                tsnDropdown.classList.remove('open');
+
+                if (this.value.length < 2) { hsnDropdown.classList.remove('open'); return; }
+
+                const db = await loadHsnTsnDb();
+                const val = this.value;
+                // Find matching HSN keys
+                const matches = Object.keys(db).filter(k => k.startsWith(val)).slice(0, 20);
+                if (matches.length === 0) {
+                    hsnDropdown.innerHTML = '<div class="hsn-dropdown-empty">Keine HSN gefunden</div>';
+                    hsnDropdown.classList.add('open');
+                    return;
+                }
+
+                // Show unique brands for each HSN
+                const items = matches.map(hsn => {
+                    const tsns = db[hsn];
+                    const brands = [...new Set(Object.values(tsns).map(v => v[0]))];
+                    return { hsn, brands: brands.join(', ') };
+                });
+
+                hsnDropdown.innerHTML = items.map(i =>
+                    `<div class="hsn-dropdown-item" data-hsn="${i.hsn}"><strong>${i.hsn}</strong> — ${i.brands}</div>`
+                ).join('');
+                hsnDropdown.classList.add('open');
+
+                // If exact match (4 digits), auto-select
+                if (val.length === 4 && db[val]) {
+                    selectHSN(val);
+                }
+            });
+
+            hsnInput.addEventListener('focus', function() {
+                if (this.value.length >= 2) this.dispatchEvent(new Event('input'));
+            });
+
+            hsnDropdown.addEventListener('click', function(e) {
+                const item = e.target.closest('.hsn-dropdown-item');
+                if (!item) return;
+                const hsn = item.dataset.hsn;
+                hsnInput.value = hsn;
+                selectHSN(hsn);
+            });
+
+            async function selectHSN(hsn) {
+                hsnDropdown.classList.remove('open');
+                const db = await loadHsnTsnDb();
+                const tsns = db[hsn];
+                if (!tsns) return;
+                tsnInput.disabled = false;
+                tsnInput.focus();
+
+                // Build TSN dropdown immediately
+                const entries = Object.entries(tsns);
+                tsnDropdown.innerHTML = entries.slice(0, 50).map(([tsn, info]) =>
+                    `<div class="hsn-dropdown-item" data-tsn="${tsn}"><strong>${tsn}</strong> — ${info[0]} ${info[1]} (${info[2]})</div>`
+                ).join('');
+                if (entries.length > 50) {
+                    tsnDropdown.innerHTML += '<div class="hsn-dropdown-empty">Tippen Sie die TSN ein um zu filtern...</div>';
+                }
+                tsnDropdown.classList.add('open');
+            }
+
+            tsnInput.addEventListener('input', async function() {
+                this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/gi, '').slice(0, 3);
+                selectedVehicle = null;
+                vehicleInfo.style.display = 'none';
+
+                const db = await loadHsnTsnDb();
+                const hsn = hsnInput.value;
+                const tsns = db[hsn];
+                if (!tsns) return;
+
+                const val = this.value;
+                if (val.length === 0) {
+                    // Show all
+                    const entries = Object.entries(tsns).slice(0, 50);
+                    tsnDropdown.innerHTML = entries.map(([tsn, info]) =>
+                        `<div class="hsn-dropdown-item" data-tsn="${tsn}"><strong>${tsn}</strong> — ${info[0]} ${info[1]} (${info[2]})</div>`
+                    ).join('');
+                    tsnDropdown.classList.add('open');
+                    return;
+                }
+
+                const matches = Object.entries(tsns).filter(([k]) => k.startsWith(val)).slice(0, 30);
+                if (matches.length === 0) {
+                    tsnDropdown.innerHTML = '<div class="hsn-dropdown-empty">Keine TSN gefunden</div>';
+                    tsnDropdown.classList.add('open');
+                    return;
+                }
+                tsnDropdown.innerHTML = matches.map(([tsn, info]) =>
+                    `<div class="hsn-dropdown-item" data-tsn="${tsn}"><strong>${tsn}</strong> — ${info[0]} ${info[1]} (${info[2]})</div>`
+                ).join('');
+                tsnDropdown.classList.add('open');
+
+                // Auto-select if exact match
+                if (val.length === 3 && tsns[val]) {
+                    selectTSN(val, tsns[val]);
+                }
+            });
+
+            tsnInput.addEventListener('focus', function() {
+                if (hsnInput.value.length === 4 && !this.disabled) {
+                    this.dispatchEvent(new Event('input'));
+                }
+            });
+
+            tsnDropdown.addEventListener('click', function(e) {
+                const item = e.target.closest('.hsn-dropdown-item');
+                if (!item) return;
+                const tsn = item.dataset.tsn;
+                tsnInput.value = tsn;
+                loadHsnTsnDb().then(db => {
+                    const info = db[hsnInput.value]?.[tsn];
+                    if (info) selectTSN(tsn, info);
+                });
+            });
+
+            function selectTSN(tsn, info) {
+                tsnDropdown.classList.remove('open');
+                selectedVehicle = { marke: info[0], modell: info[1], leistung: info[2], hubraum: info[3], kraftstoff: info[4] };
+                document.getElementById('vi-marke').textContent = info[0];
+                document.getElementById('vi-modell').textContent = info[1];
+                document.getElementById('vi-leistung').textContent = info[2];
+                document.getElementById('vi-hubraum').textContent = info[3];
+                document.getElementById('vi-kraftstoff').textContent = info[4];
+                vehicleInfo.style.display = 'block';
+                tsnInput.classList.add('pr-valid');
+                hsnInput.classList.add('pr-valid');
+            }
+
+            // Close dropdowns on outside click
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('#s1-hsn') && !e.target.closest('#hsn-dropdown')) hsnDropdown.classList.remove('open');
+                if (!e.target.closest('#s1-tsn') && !e.target.closest('#tsn-dropdown')) tsnDropdown.classList.remove('open');
+            });
+
+            // VIN validation
             function validateVIN(v) {
                 v = v.replace(/[^A-HJ-NPR-Z0-9]/gi, '');
                 return v.length === 17;
@@ -2117,19 +2342,10 @@
                     this.classList.remove('pr-valid', 'pr-invalid');
                     vinMsg.textContent = ''; vinMsg.className = 'pr-msg';
                 }
-                validateStep1UI();
             });
 
-            hsnInput.addEventListener('input', function() {
-                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);
-                validateStep1UI();
-            });
-            tsnInput.addEventListener('input', function() {
-                this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/gi, '').slice(0, 3);
-                validateStep1UI();
-            });
-            kmInput.addEventListener('input', validateStep1UI);
-            ezInput.addEventListener('input', validateStep1UI);
+            kmInput.addEventListener('input', function() {});
+            ezInput.addEventListener('input', function() {});
 
             photoInput.addEventListener('change', function() {
                 if (this.files.length > 0) {
@@ -2148,14 +2364,10 @@
                     kmInput.value.trim() !== '' &&
                     ezInput.value !== '';
             }
-            function validateStep1UI() {
-                // No longer disabling - free navigation
-            }
 
             s1Next.addEventListener('click', () => goToStep(2));
 
             // ===== STEP 2: Services =====
-            // Tab switching
             document.querySelectorAll('.st-tab').forEach(tab => {
                 tab.addEventListener('click', function() {
                     document.querySelectorAll('.st-tab').forEach(t => t.classList.remove('active'));
@@ -2165,7 +2377,6 @@
                 });
             });
 
-            // Werkstatt-Service checkboxes
             const bremsenDetail = document.getElementById('bremsen-detail');
             document.querySelectorAll('input[name="ws-service"]').forEach(cb => {
                 cb.addEventListener('change', () => {
@@ -2175,7 +2386,6 @@
                 });
             });
 
-            // Weitere Services checkboxes
             document.querySelectorAll('.es-item').forEach(item => {
                 item.addEventListener('click', function(e) {
                     if (e.target.tagName === 'INPUT') return;
@@ -2208,16 +2418,12 @@
                     '<li><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>' + s + '</li>'
                 ).join('');
                 summary.classList.toggle('visible', items.length > 0);
-                validateStep2UI();
             }
 
             function validateStep2() {
                 const all = getAllSelectedServices();
                 const sonstiges = document.getElementById('es-sonstiges').value.trim();
                 return all.length > 0 || sonstiges.length > 0;
-            }
-            function validateStep2UI() {
-                // No longer disabling - free navigation
             }
 
             document.getElementById('s2-back').addEventListener('click', () => goToStep(1));
@@ -2229,23 +2435,20 @@
             const s3Phone = document.getElementById('s3-phone');
             const s3Send = document.getElementById('s3-send');
 
-            function validateStep3UI() {
-                // No longer disabling - validation on final submit
-            }
-            [s3Name, s3Email, s3Phone].forEach(el => el.addEventListener('input', validateStep3UI));
-
             function buildFinalSummary() {
-                // Vehicle
                 const vGrid = document.getElementById('summary-vehicle');
+                const vehicleStr = selectedVehicle ? (selectedVehicle.marke + ' ' + selectedVehicle.modell) : '-';
                 vGrid.innerHTML = [
-                    { l: 'FIN/VIN', v: vinInput.value },
+                    { l: 'Fahrzeug', v: vehicleStr },
                     { l: 'HSN / TSN', v: hsnInput.value + ' / ' + tsnInput.value },
-                    { l: 'Kilometerstand', v: kmInput.value },
+                    { l: 'FIN/VIN', v: vinInput.value || '-' },
+                    { l: 'Leistung', v: selectedVehicle ? selectedVehicle.leistung : '-' },
+                    { l: 'Hubraum', v: selectedVehicle ? selectedVehicle.hubraum : '-' },
+                    { l: 'Kraftstoff', v: selectedVehicle ? selectedVehicle.kraftstoff : '-' },
+                    { l: 'Kilometerstand', v: kmInput.value || '-' },
                     { l: 'Erstzulassung', v: ezInput.value ? new Date(ezInput.value).toLocaleDateString('de-DE') : '-' },
-                    { l: 'Fahrzeugschein-Foto', v: photoInput.files.length > 0 ? photoInput.files[0].name : 'Keins' },
                 ].map(i => `<div class="summary-item"><span class="summary-item-label">${i.l}</span><span class="summary-item-value">${i.v}</span></div>`).join('');
 
-                // Services
                 const sDiv = document.getElementById('summary-services');
                 const all = getAllSelectedServices();
                 const sonstiges = document.getElementById('es-sonstiges').value.trim();
@@ -2258,47 +2461,88 @@
                     `<span class="service-tag"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>${t}</span>`
                 ).join('');
 
-                // Contact (will update live)
                 updateContactSummary();
             }
 
             function updateContactSummary() {
                 const cGrid = document.getElementById('summary-contact');
-                const items = [
+                cGrid.innerHTML = [
                     { l: 'Name/Firma', v: s3Name.value || '-' },
                     { l: 'E-Mail', v: s3Email.value || '-' },
                     { l: 'Telefon', v: s3Phone.value || '-' },
                     { l: 'Wunschtermin', v: (document.getElementById('s3-date').value ? new Date(document.getElementById('s3-date').value).toLocaleDateString('de-DE') : '-') + (document.getElementById('s3-time').value ? ', ' + document.getElementById('s3-time').value + ' Uhr' : '') },
-                ];
-                cGrid.innerHTML = items.map(i => `<div class="summary-item"><span class="summary-item-label">${i.l}</span><span class="summary-item-value">${i.v}</span></div>`).join('');
+                ].map(i => `<div class="summary-item"><span class="summary-item-label">${i.l}</span><span class="summary-item-value">${i.v}</span></div>`).join('');
             }
             [s3Name, s3Email, s3Phone, document.getElementById('s3-date'), document.getElementById('s3-time')].forEach(el => el.addEventListener('input', updateContactSummary));
 
             document.getElementById('s3-back').addEventListener('click', () => goToStep(2));
-            s3Send.addEventListener('click', function() {
-                // Validate all steps before sending
+            s3Send.addEventListener('click', async function() {
                 const errors = [];
-                if (!validateStep1()) errors.push('Fahrzeugdaten unvollständig (FIN, HSN, TSN, km, Erstzulassung)');
-                if (!validateStep2()) errors.push('Bitte mindestens einen Service auswählen');
-                if (!(s3Name.value.trim() && s3Email.value.trim() && s3Phone.value.trim())) errors.push('Bitte Name, E-Mail und Telefon ausfüllen');
+                if (!validateStep1()) errors.push('Fahrzeugdaten unvollstaendig (FIN 17 Zeichen, HSN 4-stellig, TSN 3-stellig, Kilometerstand, Erstzulassung)');
+                if (!validateStep2()) errors.push('Bitte mindestens einen Service auswaehlen');
+                if (!(s3Name.value.trim() && s3Email.value.trim() && s3Phone.value.trim())) errors.push('Bitte Name, E-Mail und Telefon ausfuellen');
                 if (errors.length > 0) {
-                    alert('Bitte prüfen Sie folgende Felder:\n\n• ' + errors.join('\n• '));
+                    alert('Bitte pruefen Sie folgende Felder:\n\n- ' + errors.join('\n- '));
                     return;
                 }
+
                 const allServices = getAllSelectedServices();
                 const bremsenDetails = Array.from(document.querySelectorAll('input[name="bremsen-detail"]:checked')).map(c => c.value);
-                console.log('Service-Anfrage:', {
+                const payload = {
+                    type: 'service-anfrage',
+                    workshopEmail: KFZ_CONFIG.workshopEmail,
+                    workshopName: KFZ_CONFIG.workshopName,
+                    vehicle: selectedVehicle ? (selectedVehicle.marke + ' ' + selectedVehicle.modell) : 'Unbekannt',
                     vin: vinInput.value, hsn: hsnInput.value, tsn: tsnInput.value,
+                    leistung: selectedVehicle?.leistung || '', hubraum: selectedVehicle?.hubraum || '', kraftstoff: selectedVehicle?.kraftstoff || '',
                     km: kmInput.value, ez: ezInput.value,
-                    photo: photoInput.files.length > 0 ? photoInput.files[0].name : null,
-                    services: allServices, bremsenDetails,
-                    bremsenFreitext: document.getElementById('ws-bremsen-freitext')?.value,
-                    sonstiges: document.getElementById('es-sonstiges').value,
+                    services: allServices.join(', '), bremsenDetails: bremsenDetails.join(', '),
+                    bremsenFreitext: document.getElementById('ws-bremsen-freitext')?.value || '',
+                    sonstiges: document.getElementById('es-sonstiges').value || '',
                     name: s3Name.value, email: s3Email.value, phone: s3Phone.value,
                     date: document.getElementById('s3-date').value, time: document.getElementById('s3-time').value,
                     remarks: document.getElementById('s3-remarks').value,
-                });
-                goToStep(4);
+                };
+
+                // Disable button
+                s3Send.disabled = true;
+                s3Send.textContent = 'Wird gesendet...';
+
+                try {
+                    const res = await fetch(KFZ_CONFIG.apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) throw new Error('Server error');
+                    goToStep(4);
+                } catch(err) {
+                    // Fallback: mailto
+                    const lines = [
+                        'Fahrzeug: ' + payload.vehicle,
+                        'HSN/TSN: ' + payload.hsn + '/' + payload.tsn,
+                        'VIN: ' + payload.vin,
+                        'KM: ' + payload.km,
+                        'EZ: ' + payload.ez,
+                        '',
+                        'Services: ' + payload.services,
+                        bremsenDetails.length ? 'Bremsen-Details: ' + payload.bremsenDetails : '',
+                        payload.sonstiges ? 'Sonstiges: ' + payload.sonstiges : '',
+                        '',
+                        'Name: ' + payload.name,
+                        'E-Mail: ' + payload.email,
+                        'Telefon: ' + payload.phone,
+                        'Wunschtermin: ' + (payload.date || '-') + ' ' + (payload.time || ''),
+                        payload.remarks ? 'Bemerkungen: ' + payload.remarks : '',
+                    ].filter(Boolean).join('\n');
+                    const subject = encodeURIComponent('Service-Anfrage: ' + payload.vehicle + ' (' + payload.name + ')');
+                    const body = encodeURIComponent(lines);
+                    window.location.href = 'mailto:' + KFZ_CONFIG.workshopEmail + '?subject=' + subject + '&body=' + body;
+                    goToStep(4);
+                } finally {
+                    s3Send.disabled = false;
+                    s3Send.innerHTML = 'Anfrage senden <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
+                }
             });
         })();
     </script>
